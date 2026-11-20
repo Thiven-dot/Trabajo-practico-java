@@ -1,11 +1,32 @@
 package gestionbiblioteca;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class Sesion {
-    private final Map<String, Object> datos = new HashMap<>();
+    private String usuario;
+    private Rol rol;
 
-    public void guardar(String clave, Object valor) { datos.put(clave, valor); }
-    public Object obtener(String clave) { return datos.get(clave); }
+    public void iniciarSesion(String usuario, Rol rol) {
+        this.usuario = usuario;
+        this.rol = rol;
+    }
+
+    public void cerrarSesion() {
+        this.usuario = null;
+        this.rol = null;
+    }
+
+    public boolean estaAutenticada() {
+        return usuario != null && rol != null;
+    }
+
+    public boolean esBibliotecario() {
+        return estaAutenticada() && rol == Rol.BIBLIOTECARIO;
+    }
+
+    public String getUsuario() {
+        return usuario;
+    }
+
+    public Rol getRol() {
+        return rol;
+    }
 }

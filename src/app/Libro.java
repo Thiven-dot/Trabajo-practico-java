@@ -22,7 +22,6 @@ public class Libro {
     public String getTitulo() {
         return titulo;
     }
-
     public void setTitulo(String titulo) {
         this.titulo = titulo;
     }
@@ -30,11 +29,9 @@ public class Libro {
     public String getAutor() {
         return autor;
     }
-
     public void setAutor(String autor) {
         this.autor = autor;
     }
-
     @Override
     public String toString() {
         return "ID: " + id + " | Título: " + titulo + " | Autor: " + autor;
