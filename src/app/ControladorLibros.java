@@ -1,110 +1,48 @@
 package app;
 
-import gestionbiblioteca.AccionNoEncontradaException;
-import gestionbiblioteca.RecursoNoEncontradoException;
-import gestionbiblioteca.Sesion;
-import gestionbiblioteca.SolicitudInvalidaException;
-import gestionbiblioteca.Validador;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 
-public class ControladorLibros {
+import gestionbiblioteca.Controlador;
+import gestionbiblioteca.Rol;
+import gestionbiblioteca.Solicitud;
+import gestionbiblioteca.Validadores;
 
-    private final List<Libro> libros = new ArrayList<>();
-    private final Sesion sesion;
+public class ControladorLibros implements Controlador {
+    private final ServicioLibros libros;
 
-    public ControladorLibros(Sesion sesion) {
-        this.sesion = sesion;
-        libros.add(new Libro("1", "Clean Code", "Robert C. Martin"));
-        libros.add(new Libro("2", "Java Efectivo", "Joshua Bloch"));
+    public ControladorLibros(ServicioLibros libros) {
+        this.libros = libros;
     }
 
-    public String procesar(String accion, String parametro) {
-        Validador.validarNoVacio(accion, "accion");
+    @Override
+    public String recurso() { return "libros"; }
 
-        return switch (accion.toLowerCase()) {
-            case "agregar" -> agregarLibro(parametro);
-            case "quitar" -> quitarLibro(parametro);
-            case "listar" -> listarLibros();
-            case "buscar" -> buscarLibro(parametro);
-            default -> throw new AccionNoEncontradaException("Acción no encontrada en libros: " + accion);
-        };
+    @Override
+    public Map<String, Function<Solicitud, String>> acciones() {
+        Map<String, Function<Solicitud, String>> acciones = new HashMap<>();
+        acciones.put("listar", s -> libros.listar());
+        acciones.put("buscar", s -> libros.buscar(s.parametro(0, "texto")));
+        acciones.put("agregar", this::agregar);
+        acciones.put("quitar", s -> libros.quitar(s.parametro(0, "codigo")));
+        return acciones;
     }
 
-    private void verificarBibliotecario() {
-        if (!sesion.estaAutenticada()) {
-            throw new SolicitudInvalidaException("Debe iniciar sesión primero (usuarios/login).");
-        }
-        if (!sesion.esBibliotecario()) {
-            throw new SolicitudInvalidaException("Acceso denegado: solo BIBLIOTECARIO puede ejecutar esta acción.");
-        }
+    @Override
+    public Map<String, Rol> permisos() {
+        Map<String, Rol> permisos = new HashMap<>();
+        permisos.put("listar", Rol.USUARIO);
+        permisos.put("buscar", Rol.USUARIO);
+        permisos.put("agregar", Rol.ADMIN);
+        permisos.put("quitar", Rol.ADMIN);
+        return permisos;
     }
 
-    // Solo el bibliotecario: libros,agregar,id,titulo,autor
-    private String agregarLibro(String parametro) {
-        verificarBibliotecario();
-        Validador.validarNoVacio(parametro, "datosLibro");
-
-        String[] datos = parametro.split(",", 3);
-        if (datos.length < 3) {
-            throw new SolicitudInvalidaException("Formato inválido. Use: libros/agregar/id,titulo,autor");
-        }
-
-        String id = datos[0].trim();
-        String titulo = datos[1].trim();
-        String autor = datos[2].trim();
-
-        Validador.validarEnteroPositivo(id, "id");
-        Validador.validarLargoMaximo(id, 10, "id");
-        Validador.validarNoVacio(titulo, "titulo");
-        Validador.validarLargoMaximo(titulo, 100, "titulo");
-        Validador.validarNoVacio(autor, "autor");
-        Validador.validarLargoMaximo(autor, 80, "autor");
-
-        boolean yaExiste = libros.stream().anyMatch(l -> l.getId().equals(id));
-        if (yaExiste) {
-            throw new SolicitudInvalidaException("Ya existe un libro con el ID: " + id);
-        }
-
-        Libro nuevo = new Libro(id, titulo, autor);
-        libros.add(nuevo);
-        return "Libro agregado: " + nuevo;
-    }
-
-    // Solo BIBLIOTECARIO: libros/quitar/id
-    private String quitarLibro(String parametro) {
-        verificarBibliotecario();
-        int idNumerico = Validador.validarEnteroPositivo(parametro, "id");
-        Validador.validarLargoMaximo(parametro, 10, "id");
-        String idBuscado = String.valueOf(idNumerico);
-
-        Libro libroAQuitar = libros.stream()
-            .filter(l -> l.getId().equals(idBuscado))
-            .findFirst()
-            .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró un libro con ID: " + idBuscado));
-
-        libros.remove(libroAQuitar);
-        return "Libro eliminado: " + libroAQuitar;
-    }
-
-    private String listarLibros() {
-        if (libros.isEmpty()) {
-            return "No hay libros registrados.";
-        }
-        StringBuilder sb = new StringBuilder("Lista de libros:\n");
-        libros.forEach(l -> sb.append("- ").append(l).append("\n"));
-        return sb.toString();
-    }
-
-    private String buscarLibro(String parametro) {
-        Validador.validarNoVacio(parametro, "criterio");
-        Validador.validarLargoMaximo(parametro, 100, "criterio");
-        String criterio = parametro.trim();
-
-        return libros.stream()
-            .filter(l -> l.getId().equalsIgnoreCase(criterio) || l.getTitulo().equalsIgnoreCase(criterio))
-            .findFirst()
-            .map(l -> "Libro encontrado: " + l)
-            .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró el libro: " + criterio));
+    private String agregar(Solicitud s) {
+        String codigo = s.parametro(0, "codigo", Validadores.largoMaximo(10));
+        String titulo = s.parametro(1, "titulo", Validadores.largoMaximo(60));
+        String año = s.parametro(2, "año", Validadores.enteroPositivo());
+        return libros.agregar(codigo, titulo, Integer.parseInt(año));
     }
 }
