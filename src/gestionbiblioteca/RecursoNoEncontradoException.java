@@ -1,7 +1,7 @@
 package gestionbiblioteca;
 
-public class RecursoNoEncontradoException extends RuntimeException {
-    public RecursoNoEncontradoException(String mensaje) {
-        super(mensaje);
+public class RecursoNoEncontradoException extends FrameworkException {
+    public RecursoNoEncontradoException(String recurso) {
+        super("No existe el recurso '" + recurso + "'");
     }
 }
