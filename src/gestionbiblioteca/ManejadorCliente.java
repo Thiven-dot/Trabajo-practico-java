@@ -16,7 +16,7 @@ public class ManejadorCliente implements Runnable {
     public void run() {
         String hilo = Thread.currentThread().getName();
         System.out.println("[" + hilo + "] conectado: " + socket.getInetAddress() + ":" + socket.getPort());
-        Sesion sesion = new Sesion();
+        Sesion sesion = new Sesion();   
 
         try (Comunicador com = new Comunicador(socket.getInputStream(), socket.getOutputStream())) {
 
@@ -25,15 +25,14 @@ public class ManejadorCliente implements Runnable {
             String linea;
             while ((linea = com.recibir()) != null) {
                 try {
-                    Solicitud solicitud = ParserSolicitudes.parsear(linea);
-                    String resultado = router.despachar(solicitud, sesion);
+                    Solicitud solicitud = ParserSolicitudes.parsear(linea, sesion);
+                    String resultado = router.despachar(solicitud);
                     com.enviar("OK " + resultado);
                 } catch (FrameworkException e) {
                     com.enviar("ERROR " + e.getMessage());
-                } catch (Exception e) {
-                   
+                } catch (RuntimeException e) {
                     System.out.println("[" + hilo + "] error inesperado: " + e);
-                    com.enviar("ERROR interno del servidor");
+                    com.enviar("ERROR Fallo interno del servidor");
                 }
             }
         } catch (IOException e) {
