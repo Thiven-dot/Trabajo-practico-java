@@ -1,59 +1,48 @@
 package app;
 
-import gestionbiblioteca.AccionNoEncontradaException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+
+import gestionbiblioteca.Controlador;
 import gestionbiblioteca.Rol;
-import gestionbiblioteca.Sesion;
-import gestionbiblioteca.SolicitudInvalidaException;
-import gestionbiblioteca.Validador;
-import java.util.List;
+import gestionbiblioteca.Solicitud;
 
-public class ControladorUsuarios {
+public class ControladorUsuarios implements Controlador {
+    private final ServicioUsuarios usuarios;
 
-    private record UsuarioRegistrado(String usuario, String password, Rol rol) {
+    public ControladorUsuarios(ServicioUsuarios usuarios) {
+        this.usuarios = usuarios;
     }
 
-    private final Sesion sesion;
-    private final List<UsuarioRegistrado> usuarios;
+    @Override
+    public String recurso() { return "usuarios"; }
 
-    public ControladorUsuarios(Sesion sesion) {
-        this.sesion = sesion;
-        // Usuarios cargados a mano en el código
-        this.usuarios = List.of(
-            new UsuarioRegistrado("socio1", "1234", Rol.SOCIO),
-            new UsuarioRegistrado("biblio1", "admin123", Rol.BIBLIOTECARIO)
-        );
+    @Override
+    public Map<String, Function<Solicitud, String>> acciones() {
+        Map<String, Function<Solicitud, String>> acciones = new HashMap<>();
+        acciones.put("login", this::login);
+        acciones.put("logout", this::logout);
+        return acciones;
     }
 
-    public String procesar(String accion, String parametro) {
-        Validador.validarNoVacio(accion, "accion");
-
-        return switch (accion.toLowerCase()) {
-            case "login" -> login(parametro);
-            default -> throw new AccionNoEncontradaException("Acción no encontrada en usuarios: " + accion);
-        };
+    @Override
+    public Map<String, Rol> permisos() {
+        Map<String, Rol> permisos = new HashMap<>();
+        permisos.put("logout", Rol.USUARIO);  
+        return permisos;
     }
 
-    private String login(String parametro) {
-        Validador.validarNoVacio(parametro, "credenciales");
+    private String login(Solicitud s) {
+        String nombre = s.parametro(0, "nombre");
+        String clave = s.parametro(1, "clave");
+        Usuario u = usuarios.autenticar(nombre, clave);
+        s.sesion().iniciar(u.nombre(), u.rol());   
+        return "Hola, " + u.nombre();
+    }
 
-        String[] partes = parametro.split(",", 2);
-        if (partes.length < 2) {
-            throw new SolicitudInvalidaException("Formato inválido. Use: usuarios/login/usuario,password");
-        }
-
-        String usuarioIngresado = partes[0].trim();
-        String passwordIngresado = partes[1].trim();
-
-        Validador.validarNoVacio(usuarioIngresado, "usuario");
-        Validador.validarLargoMaximo(usuarioIngresado, 20, "usuario");
-        Validador.validarNoVacio(passwordIngresado, "password");
-
-        UsuarioRegistrado encontrado = usuarios.stream()
-            .filter(u -> u.usuario().equals(usuarioIngresado) && u.password().equals(passwordIngresado))
-            .findFirst()
-            .orElseThrow(() -> new SolicitudInvalidaException("Usuario o contraseña incorrectos."));
-
-        sesion.iniciarSesion(encontrado.usuario(), encontrado.rol());
-        return "Login correcto. Usuario: " + encontrado.usuario() + " | Rol: " + encontrado.rol();
+    private String logout(Solicitud s) {
+        s.sesion().cerrar();
+        return "Sesion cerrada";
     }
 }
