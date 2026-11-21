@@ -1,39 +1,36 @@
 package app;
 
 public class Libro {
-    private String id;
-    private String titulo;
-    private String autor;
+    private final String codigo;
+    private final String titulo;
+    private final int año;
+    private String prestadoA;  
+    private int dias;
 
-    public Libro(String id, String titulo, String autor) {
-        this.id = id;
+    public Libro(String codigo, String titulo, int año) {
+        this.codigo = codigo;
         this.titulo = titulo;
-        this.autor = autor;
+        this.año = año;
     }
 
-    public String getId() {
-        return id;
+    public String getCodigo() { return codigo; }
+    public String getTitulo() { return titulo; }
+    public String getPrestadoA() { return prestadoA; }
+    public boolean estaPrestado() { return prestadoA != null; }
+
+    public void prestar(String socio, int dias) {
+        this.prestadoA = socio;
+        this.dias = dias;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void devolver() {
+        this.prestadoA = null;
+        this.dias = 0;
     }
 
-    public String getTitulo() {
-        return titulo;
-    }
-    public void setTitulo(String titulo) {
-        this.titulo = titulo;
-    }
-
-    public String getAutor() {
-        return autor;
-    }
-    public void setAutor(String autor) {
-        this.autor = autor;
-    }
     @Override
     public String toString() {
-        return "ID: " + id + " | Título: " + titulo + " | Autor: " + autor;
+        String estado = estaPrestado() ? "prestado a " + prestadoA + " por " + dias + " dias" : "disponible";
+        return codigo + " - " + titulo + " (" + año + ") [" + estado + "]";
     }
 }
