@@ -1,6 +1,9 @@
 package gestionbiblioteca;
 
 public enum Rol {
-    SOCIO,
-    BIBLIOTECARIO
+    USUARIO, ADMIN;
+
+    public boolean puedeHacer(Rol requerido) {
+        return this == ADMIN || this == requerido;
+    }
 }
