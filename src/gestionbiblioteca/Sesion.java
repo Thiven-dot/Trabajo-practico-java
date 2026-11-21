@@ -4,29 +4,25 @@ public class Sesion {
     private String usuario;
     private Rol rol;
 
-    public void iniciarSesion(String usuario, Rol rol) {
+    public void iniciar(String usuario, Rol rol) {
         this.usuario = usuario;
         this.rol = rol;
     }
 
-    public void cerrarSesion() {
-        this.usuario = null;
-        this.rol = null;
+    public void cerrar() {
+        usuario = null;
+        rol = null;
     }
 
-    public boolean estaAutenticada() {
-        return usuario != null && rol != null;
-    }
+    public boolean estaLogueado() { return usuario != null; }
+    public String usuario() { return usuario; }
 
-    public boolean esBibliotecario() {
-        return estaAutenticada() && rol == Rol.BIBLIOTECARIO;
-    }
-
-    public String getUsuario() {
-        return usuario;
-    }
-
-    public Rol getRol() {
-        return rol;
+    public void verificar(Rol requerido) {
+        if (!estaLogueado()) {
+            throw new FrameworkException("Inicie sesion");
+        }
+        if (!rol.puedeHacer(requerido)) {
+            throw new FrameworkException("Permiso insuficiente");
+        }
     }
 }
