@@ -31,7 +31,7 @@ public class ServicioLibros {
     public synchronized String quitar(String codigo) {
         Libro l = buscarPorCodigo(codigo);
         if (l.estaPrestado()) {
-            throw new FrameworkException("No se puede quitar: el libro esta prestado");
+            throw new FrameworkException("No se puede sacar: el libro esta prestado");
         }
         libros.remove(l);
         return "Libro quitado: " + codigo;
